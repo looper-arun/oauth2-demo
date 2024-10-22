@@ -84,6 +84,6 @@ app.get('/secure', (req, res) => {
         .catch(err => res.status(401).json(err));
 });
 
-app.listen(3000, () => {
+app.listen(process.env.PORT || 3000, () => {
     console.log('OAuth2 server is running on http://localhost:3000');
 });
