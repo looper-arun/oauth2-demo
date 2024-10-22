@@ -1,0 +1,6 @@
+curl --location 'http://localhost:3000/secure' \
+--header 'Authorization: Bearer 84e8dcd530f703262b80856d68dcc571327ac807'
+
+To Obtain Bearer access-token, refer one of the following
+1. client-creds-token.png
+2. password-creds.png
