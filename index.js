@@ -3,9 +3,10 @@ const bodyParser = require('body-parser');
 const OAuth2Server = require('oauth2-server');
 const {Request, Response} = OAuth2Server
 
-const db = {accessTokens: {}, refreshTokens: {}}
+const db = {accessTokens: {}}
 
 const app = express();
+const port = process.env.PORT || 3000
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -38,15 +39,9 @@ const oauth = new OAuth2Server({
             }
             if (token.accessToken) {
                 db.accessTokens[token.accessToken] = resp
-                // setTimeout(() => {
-                //     delete db.accessTokens[token.accessToken]
-                // }, 10000) // 10 sec
-            }
-            if (token.refreshToken) {
-                db.refreshTokens[token.refreshToken] = resp
-                // setTimeout(() => {
-                //     delete db.refreshTokens[token.refreshToken]
-                // }, 20000) // 20 sec
+                setTimeout(() => {
+                    delete db.accessTokens[token.accessToken]
+                }, 10000) // 10 sec
             }
             return resp;
         },
@@ -75,12 +70,8 @@ const oauth = new OAuth2Server({
 app.post('/token', (req, res) => {
     const request = new Request(req);
     const response = new Response(res);
-    console.log("/token called")
     oauth
-        .token(request, response, {
-            accessTokenLifetime: 10,
-            refreshTokenLifetime: 20,
-        })
+        .token(request, response)
         .then(token => {
             token = {...token, access_token: token.accessToken}
             var resp = res.json(token)
@@ -93,7 +84,6 @@ app.post('/token', (req, res) => {
 app.get('/secure', (req, res) => {
     const request = new Request(req);
     const response = new Response(res);
-    console.log("/secure called")
 
     oauth
         .authenticate(request, response)
@@ -101,6 +91,6 @@ app.get('/secure', (req, res) => {
         .catch(err => res.status(401).json(err));
 });
 
-app.listen(process.env.PORT || 3000, () => {
-    console.log('OAuth2 server is running on http://localhost:3000');
+app.listen(port, () => {
+    console.log(`OAuth2 server is running on http://localhost:${port}`);
 });
