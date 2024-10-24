@@ -1,14 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const OAuth2Server = require('oauth2-server');
+const {Request, Response} = OAuth2Server
+
+const db = {accessTokens: {}, refreshTokens: {}}
 
 const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
-const Request = OAuth2Server.Request;
-const Response = OAuth2Server.Response;
 
 // In-memory token storage for demo purposes
 const oauth = new OAuth2Server({
@@ -31,20 +31,36 @@ const oauth = new OAuth2Server({
             return users.find(user => user.username === username && user.password === password);
         },
         saveToken: function(token, client, user) {
-            return {
+            const resp = {
                 ...token,
                 client,
                 user
-            };
+            }
+            if (token.accessToken) {
+                db.accessTokens[token.accessToken] = resp
+                // setTimeout(() => {
+                //     delete db.accessTokens[token.accessToken]
+                // }, 10000) // 10 sec
+            }
+            if (token.refreshToken) {
+                db.refreshTokens[token.refreshToken] = resp
+                // setTimeout(() => {
+                //     delete db.refreshTokens[token.refreshToken]
+                // }, 20000) // 20 sec
+            }
+            return resp;
         },
         getAccessToken: function(token) {
             // Normally you'd query a database for access tokens
+            if (!db.accessTokens[token]) {
+                return
+            }
             return {
-                "Access Token": token,
+                ...db.accessTokens[token],
                 client: { id: 'client1' },
                 user: { id: 1 },
                 accessTokenExpiresAt: new Date(Date.now() + 10000) // 10 sec expiry
-            };
+            }
         },
         getUserFromClient: function(client) {
           return client
@@ -52,23 +68,23 @@ const oauth = new OAuth2Server({
         // These are placeholders for the example
         revokeToken: () => true,
         verifyScope: () => true,
-        getRefreshToken: () => null,
+        getRefreshToken: () => null
     }
 });
 
 app.post('/token', (req, res) => {
     const request = new Request(req);
     const response = new Response(res);
-
+    console.log("/token called")
     oauth
-        .token(request, response)
+        .token(request, response, {
+            accessTokenLifetime: 10,
+            refreshTokenLifetime: 20,
+        })
         .then(token => {
-          token = {
-            ...token,
-            access_token: token.accessToken,
-          }
-          var resp = res.json(token)
-          return resp
+            token = {...token, access_token: token.accessToken}
+            var resp = res.json(token)
+            return resp
         })
         .catch(err => res.status(500).json(err));
 });
@@ -77,6 +93,7 @@ app.post('/token', (req, res) => {
 app.get('/secure', (req, res) => {
     const request = new Request(req);
     const response = new Response(res);
+    console.log("/secure called")
 
     oauth
         .authenticate(request, response)
