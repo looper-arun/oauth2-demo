@@ -7,6 +7,7 @@ const db = {accessTokens: {}}
 
 const app = express();
 const port = process.env.PORT || 3000
+const expiry = process.env.EXPIRY_IN_SECONDS * 1000 || 10000
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -41,7 +42,7 @@ const oauth = new OAuth2Server({
                 db.accessTokens[token.accessToken] = resp
                 setTimeout(() => {
                     delete db.accessTokens[token.accessToken]
-                }, 10000) // 10 sec
+                }, expiry) // 10 sec
             }
             return resp;
         },
