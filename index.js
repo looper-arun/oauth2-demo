@@ -74,7 +74,7 @@ app.post('/token', (req, res) => {
     oauth
         .token(request, response)
         .then(token => {
-            token = {...token, access_token: token.accessToken}
+            token = {...token, access_token: token.accessToken, expiry: token.accessTokenExpiresAt}
             var resp = res.json(token)
             return resp
         })
