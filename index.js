@@ -7,7 +7,7 @@ const db = {accessTokens: {}}
 
 const app = express();
 const port = process.env.PORT || 3000
-const expiry = process.env.EXPIRY_IN_SECONDS * 1000 || 10000
+const expiryInSeconds = parseInt(process.env.EXPIRY_IN_SECONDS || 60)
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
@@ -42,7 +42,7 @@ const oauth = new OAuth2Server({
                 db.accessTokens[token.accessToken] = resp
                 setTimeout(() => {
                     delete db.accessTokens[token.accessToken]
-                }, expiry) // 10 sec
+                }, expiryInSeconds * 1000) // 10 sec
             }
             return resp;
         },
@@ -55,7 +55,7 @@ const oauth = new OAuth2Server({
                 ...db.accessTokens[token],
                 client: { id: 'client1' },
                 user: { id: 1 },
-                accessTokenExpiresAt: new Date(Date.now() + 10000) // 10 sec expiry
+                accessTokenExpiresAt: new Date(Date.now() + expiryInSeconds * 1000) // 10 sec expiry
             }
         },
         getUserFromClient: function(client) {
@@ -71,11 +71,14 @@ const oauth = new OAuth2Server({
 app.post('/token', (req, res) => {
     const request = new Request(req);
     const response = new Response(res);
+    console.log("/token called at ", new Date().toISOString());
     oauth
         .token(request, response)
         .then(token => {
-            token = {...token, access_token: token.accessToken, expiry: token.accessTokenExpiresAt}
+            token = {...token, access_token: token.accessToken, expires_in:  expiryInSeconds}
             var resp = res.json(token)
+            console.log("/token resp - ", resp)
+            console.log("/token generated at ", new Date().toISOString());
             return resp
         })
         .catch(err => res.status(500).json(err));
@@ -85,6 +88,7 @@ app.post('/token', (req, res) => {
 app.get('/secure', (req, res) => {
     const request = new Request(req);
     const response = new Response(res);
+    console.log("/secure called at ", new Date().toISOString());
 
     oauth
         .authenticate(request, response)
