@@ -77,7 +77,7 @@ app.post('/token', (req, res) => {
         .then(token => {
             token = {...token, access_token: token.accessToken, expires_in:  expiryInSeconds}
             var resp = res.json(token)
-            console.log("/token resp - ", resp)
+            console.log("/token resp - ", token)
             console.log("/token generated at ", new Date().toISOString());
             return resp
         })
